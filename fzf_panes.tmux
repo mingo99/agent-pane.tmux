@@ -40,9 +40,9 @@ do_action() {
         --input-border=rounded --input-label=' Search panes ' \
         --list-border=rounded --list-label=' Panes ' \
         --preview-border=rounded --preview-label=' Preview ' \
-        --preview-window='down:55%' --prompt=' 󰆍  ' --pointer='▌' --marker='󰄬' \
-        --color='bg:-1,bg+:-1,gutter:-1,fg:#a9b1d6,fg+:#c0caf5,hl:#7dcfff,hl+:#7dcfff,header:#737aa2,info:#7aa2f7,prompt:#7dcfff,pointer:#bb9af7,marker:#9ece6a,spinner:#e0af68,border:#3b4261,label:#7aa2f7,preview-bg:-1' \
-        --delimiter='\s{2,}' --with-nth=2..-1 --nth=2..-1 \
+        --preview-window='down:55%' --gutter=' ' --scrollbar='│' --prompt=' 󰆍  ' --pointer=' ' --marker='● ' \
+        --color='bg:-1,bg+:#292e42,gutter:-1,fg:#a9b1d6,fg+:#c0caf5,hl:#7dcfff,hl+:#7dcfff,header:#737aa2,info:#7aa2f7,prompt:#7dcfff,pointer:#bb9af7,marker:#9ece6a,spinner:#e0af68,border:#3b4261,label:#7aa2f7,preview-bg:-1' \
+        --delimiter=$'\t' --with-nth=2 \
         --bind="alt-p:toggle-preview" \
         --bind="ctrl-r:reload($cmd)" \
         --bind="ctrl-x:execute-silent(tmux kill-pane -t {1})+reload($cmd)" \
@@ -94,8 +94,46 @@ do_action() {
 }
 
 panes_src() {
-    printf "%-6s  %-12s  %-6s  %-13s  %-14s  %-16s  %s\n" \
-        'PANEID' 'SESSION' 'PANE' 'TYPE' 'STATUS' 'COMMAND' 'DETAIL'
+    fit_cell() {
+        local value=$1 width=$2
+        python3 -c '
+import sys
+import unicodedata
+
+value = sys.argv[1].replace("\t", " ").replace("\r", " ").replace("\n", " ")
+limit = int(sys.argv[2])
+
+def width(char):
+    if unicodedata.combining(char):
+        return 0
+    # Nerd Font glyphs are private-use characters rendered at two cells.
+    if "\ue000" <= char <= "\uf8ff":
+        return 2
+    return 2 if unicodedata.east_asian_width(char) in ("F", "W") else 1
+
+result = ""
+used = 0
+for char in value:
+    char_width = width(char)
+    if used + char_width > limit:
+        break
+    result += char
+    used += char_width
+
+if result != value and limit > 1:
+    while result and used > limit - 1:
+        removed = result[-1]
+        result = result[:-1]
+        used -= width(removed)
+    result += "…"
+    used += 1
+
+print(result + " " * max(0, limit - used), end="")
+' "$value" "$width"
+    }
+
+    printf '\t%-12s  %-6s  %-13s  %-14s  %-16s  %s\n' \
+        'SESSION' 'PANE' 'TYPE' 'STATUS' 'COMMAND' 'DETAIL'
     ids=()
     ordered_ids=($(tmux show -gqv '@mru_pane_ids'))
     for pane_id in $(tmux list-panes -aF '#{pane_id}'); do
@@ -115,10 +153,10 @@ panes_src() {
 
         # Classify pane type
         case "$cmd" in
-            claude|codex) kind='󰚩 agent' ;;
-            ssh)          kind='󰣀 remote' ;;
-            zsh|bash|fish) kind=' shell' ;;
-            *)            kind='󰆍 process' ;;
+            claude|codex) kind='agent' ;;
+            ssh)          kind='remote' ;;
+            zsh|bash|fish) kind='shell' ;;
+            *)            kind='process' ;;
         esac
 
         location=${location/#$HOME/\~}
@@ -127,27 +165,32 @@ panes_src() {
 
         # Determine status and color
         if [[ $question_pending == 1 ]]; then
-            status='󰋗 input'
+            status='input'
             color=$'\033[38;2;125;207;255m'
             detail="Waiting for input · $location"
         elif [[ $unread == 1 && $watch_failed == 1 ]]; then
-            status='󰅖 failed'
+            status='failed'
             color=$'\033[38;2;247;118;142m'
         elif [[ $agent_status == running ]]; then
-            status='󰔟 running'
+            status='running'
             color=$'\033[38;2;224;175;104m'
         elif [[ $agent_unread == 1 ]] || [[ $unread == 1 ]]; then
-            status='󰄬 unread'
+            status='unread'
             color=$'\033[38;2;158;206;106m'
         else
-            status='· idle'
+            status='idle'
             color=$'\033[38;2;86;95;137m'
             detail=$location
         fi
 
-        status_cell=$(printf '%-14s' "$status")
-        printf "%-6s  %-12s  %-6s  %-13s  %b%s\033[0m  %-16s  %s\n" \
-            "$pane_id" "$session" "$pane" "$kind" "$color" "$status_cell" "$cmd" "$detail"
+        pane_cell=$(fit_cell "$pane" 6)
+        session_cell=$(fit_cell "$session" 12)
+        kind_cell=$(fit_cell "$kind" 13)
+        status_cell=$(fit_cell "$status" 14)
+        command_cell=$(fit_cell "$cmd" 16)
+        visible=$(printf "%s  %s  %s  %b%s\033[0m  %s  %s" \
+            "$session_cell" "$pane_cell" "$kind_cell" "$color" "$status_cell" "$command_cell" "$detail")
+        printf '%s\t%s\n' "$pane_id" "$visible"
         ids+=($id)
     done
     tmux set -g '@mru_pane_ids' "${ids[*]}"

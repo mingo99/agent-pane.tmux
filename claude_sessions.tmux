@@ -480,16 +480,21 @@ def fzf_ui() -> None:
             "--preview-border=rounded",
             "--preview-label= Preview ",
             "--preview-window=down:55%",
+            "--multi",
+            "--gutter= ",
+            "--scrollbar=│",
             "--prompt=Claude > ",
-            "--pointer=▌",
-            "--marker=󰄬",
-            "--color=bg:-1,bg+:-1,gutter:-1,fg:#a9b1d6,fg+:#c0caf5,hl:#7dcfff,hl+:#7dcfff,header:#737aa2,info:#7aa2f7,prompt:#7dcfff,pointer:#bb9af7,marker:#9ece6a,spinner:#e0af68,border:#3b4261,label:#7aa2f7,preview-bg:-1",
+            "--pointer= ",
+            "--marker=● ",
+            "--color=bg:-1,bg+:#292e42,gutter:-1,fg:#a9b1d6,fg+:#c0caf5,hl:#7dcfff,hl+:#7dcfff,header:#737aa2,info:#7aa2f7,prompt:#7dcfff,pointer:#bb9af7,marker:#9ece6a,spinner:#e0af68,border:#3b4261,label:#7aa2f7,preview-bg:-1",
             "--delimiter=\t",
             "--with-nth=2",
             "--nth=2,3",
             "--header=ID        UPDATED           STATUS   PROJECT PATH                                    TITLE                                           MSG       SIZE",
             f"--preview={preview_cmd}",
             "--expect=enter,ctrl-v,ctrl-s,ctrl-o,ctrl-x",
+            "--bind=ctrl-i:toggle",
+            "--bind=ctrl-x:select+accept",
             "--bind=alt-p:toggle-preview",
             f"--bind=ctrl-r:reload({list_cmd})",
             f"--bind=ctrl-y:execute-silent({copy_cmd})",
@@ -502,18 +507,33 @@ def fzf_ui() -> None:
 
     lines = proc.stdout.splitlines()
     key = lines[0].strip()
-    row = lines[1] if len(lines) > 1 else ""
+    rows = lines[1:]
+    row = rows[0] if rows else ""
     if not row:
         return
     file_value = row.split("\t", 1)[0]
     session = read_session_by_file(file_value)
 
     if key == "ctrl-x":
+        sessions = []
+        seen_files = set()
+        for selected_row in rows:
+            selected_file = selected_row.split("\t", 1)[0]
+            if selected_file in seen_files:
+                continue
+            seen_files.add(selected_file)
+            try:
+                sessions.append(read_session_by_file(selected_file))
+            except RuntimeError:
+                continue
+        if not sessions:
+            sessions = [session]
         print()
-        print("Delete this Claude session:")
-        print(f"Project: {session.cwd or session.project}")
-        print(f"Title:   {session.title}")
-        print(f"File:    {session.file}")
+        print(f"Delete {len(sessions)} Claude session(s):")
+        for selected_session in sessions[:8]:
+            print(f"- {selected_session.project}: {selected_session.title}")
+        if len(sessions) > 8:
+            print(f"- ... and {len(sessions) - 8} more")
         print()
         choice = input("[t]rash  [d]elete permanently  [Enter] cancel: ").strip().lower()
         if choice not in ("t", "d"):
@@ -521,12 +541,15 @@ def fzf_ui() -> None:
         print()
         confirm = input("Type y to confirm: ").strip().lower()
         if confirm == "y":
-            if choice == "t":
-                dest = trash_session(session)
-                print(f"Moved to trash: {dest}")
-            else:
-                delete_session_permanently(session)
-                print("Permanently deleted.")
+            for selected_session in sessions:
+                if choice == "t":
+                    trash_session(selected_session)
+                else:
+                    delete_session_permanently(selected_session)
+            print(
+                f"{'Moved to trash' if choice == 't' else 'Permanently deleted'} "
+                f"{len(sessions)} session(s)."
+            )
             input("Press Enter to return to sessions...")
         os.execv(sys.executable, [sys.executable, str(script)])
         return
