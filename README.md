@@ -35,6 +35,62 @@ Clone and source in `~/.tmux.conf`:
 run '~/.config/tmux/plugins/agent-pane.tmux/agent.tmux'
 ```
 
+## Claude Code Hooks
+
+The status icons for Claude Code require Claude lifecycle hooks. Add this to
+`~/.claude/settings.json`, or merge the `hooks` block into your existing file:
+
+```json
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.config/tmux/plugins/agent-pane.tmux/scripts/claude_task_event.sh start",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.config/tmux/plugins/agent-pane.tmux/scripts/claude_task_event.sh stop",
+            "timeout": 5
+          }
+        ]
+      }
+    ],
+    "Notification": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.config/tmux/plugins/agent-pane.tmux/scripts/claude_task_event.sh notify",
+            "timeout": 5
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+These hooks map Claude events to tmux pane state:
+
+| Claude event | tmux state |
+|---|---|
+| `UserPromptSubmit` | running |
+| `Stop` | done + unread when the pane is inactive |
+| `Notification` | waiting for input + unread when the pane is inactive |
+
+Restart any existing Claude Code pane after changing `settings.json`; already
+running Claude processes may not reload hook settings.
+
 ## Keybindings
 
 | Key | Action |
