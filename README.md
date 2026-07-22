@@ -69,7 +69,7 @@ Multi-select with `Tab` — selecting multiple panes breaks them into a new wind
 | `Ctrl-v` | Restore in a right split |
 | `Ctrl-s` | Restore in a bottom split |
 | `Ctrl-o` | Type the restore command into the origin pane |
-| `Ctrl-x` | Move transcript to trash |
+| `Ctrl-x` | Choose trash or permanent deletion |
 | `Ctrl-y` | Copy session id |
 | `Ctrl-r` | Reload session list |
 | `Alt-p` | Toggle preview |
@@ -79,6 +79,10 @@ Trash location:
 ```text
 ~/.local/share/tmux-claude-sessions/trash/
 ```
+
+After pressing `Ctrl-x`, choose `t` to move the transcript to trash or `d` to
+delete it permanently. Both choices require confirmation, and the session list
+reopens automatically afterward.
 
 Sessions launched through this manager set pane option `@claude_session_id`, so the history list can mark them as `active` while the pane exists.
 

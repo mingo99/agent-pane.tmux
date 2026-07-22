@@ -431,6 +431,10 @@ def trash_session(session: Session) -> pathlib.Path:
     return dest_dir
 
 
+def delete_session_permanently(session: Session) -> None:
+    session.file.unlink()
+
+
 def copy_id(file_value: str) -> None:
     session = read_session_by_file(file_value)
     if command_exists("pbcopy"):
@@ -506,16 +510,25 @@ def fzf_ui() -> None:
 
     if key == "ctrl-x":
         print()
-        print("Move this Claude session to trash?")
+        print("Delete this Claude session:")
         print(f"Project: {session.cwd or session.project}")
         print(f"Title:   {session.title}")
         print(f"File:    {session.file}")
         print()
+        choice = input("[t]rash  [d]elete permanently  [Enter] cancel: ").strip().lower()
+        if choice not in ("t", "d"):
+            os.execv(sys.executable, [sys.executable, str(script)])
+        print()
         confirm = input("Type y to confirm: ").strip().lower()
         if confirm == "y":
-            dest = trash_session(session)
-            print(f"Moved to trash: {dest}")
-            input("Press Enter to continue...")
+            if choice == "t":
+                dest = trash_session(session)
+                print(f"Moved to trash: {dest}")
+            else:
+                delete_session_permanently(session)
+                print("Permanently deleted.")
+            input("Press Enter to return to sessions...")
+        os.execv(sys.executable, [sys.executable, str(script)])
         return
 
     mode_by_key = {
