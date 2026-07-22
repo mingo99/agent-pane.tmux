@@ -106,6 +106,7 @@ Icons only show on inactive windows. Active window shows the theme format as-is.
 | File | Purpose |
 |---|---|
 | `agent.tmux` | TPM entry point — sets hooks, keybindings, status |
+| `scripts/claude_task_event.sh` | Bridges Claude Code hooks into tmux pane status |
 | `scripts/clear_agent_pane_state.sh` | Clears unread/watch flags on focus |
 | `scripts/watch_pane.sh` | Monitors a pane for command completion |
 | `scripts/focus_latest_notified.sh` | Jumps to the pane with highest-priority notification |

@@ -4,10 +4,10 @@
 #                   fzf pane navigator for tmux.
 #
 # Install via TPM:
-#   set -g @plugin 'user/tmux-agent-pane'
+#   set -g @plugin 'mingo99/agent-pane.tmux'
 #
 # Or source directly:
-#   run '~/.config/tmux/plugins/tmux-agent-pane/agent.tmux'
+#   run '~/.config/tmux/plugins/agent-pane.tmux/agent.tmux'
 # ============================================================
 set -euo pipefail
 
