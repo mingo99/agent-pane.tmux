@@ -434,7 +434,7 @@ def fzf_ui() -> None:
             "--list-label= Sessions ",
             "--preview-border=rounded",
             "--preview-label= Preview ",
-            "--preview-window=down:55%:wrap",
+            "--preview-window=down:55%",
             "--prompt=Claude > ",
             "--pointer=▌",
             "--marker=󰄬",
