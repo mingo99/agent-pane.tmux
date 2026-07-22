@@ -34,6 +34,9 @@ do_action() {
     last_pane_cmd='$(tmux show -gqv "@mru_pane_ids" | cut -d\  -f1)'
     selected=$(FZF_DEFAULT_COMMAND=$cmd fzf -m --ansi --preview="$preview_cmd" \
         --layout=reverse --info=inline --header-lines=1 --padding=1 \
+        --border=rounded \
+        --border-label=' Enter switch  Tab select  Ctrl-x kill  Ctrl-v right  Ctrl-s bottom  Ctrl-t swap  Ctrl-r refresh  Alt-p preview ' \
+        --border-label-pos=2:bottom \
         --input-border=rounded --input-label=' Search panes ' \
         --list-border=rounded --list-label=' Panes ' \
         --preview-border=rounded --preview-label=' Preview ' \

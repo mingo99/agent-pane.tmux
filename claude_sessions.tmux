@@ -288,18 +288,6 @@ def preview(file_value: str) -> None:
         print("Unable to read session.")
         return
 
-    print(f"\033[1mSession\033[0m  {session.session_id}")
-    print(f"\033[1mStatus \033[0m  {session.status}")
-    print(f"\033[1mProject\033[0m  {session.cwd or '(unknown)'}")
-    print(f"\033[1mUpdated\033[0m  {fmt_time(session.updated)}")
-    print(f"\033[1mSize   \033[0m  {human_size(session.size_bytes)}")
-    print(f"\033[1mFile   \033[0m  {file}")
-    print()
-    print("\033[1mTitle\033[0m")
-    print(session.title)
-    print()
-    print("\033[1mRecent messages\033[0m")
-
     messages: list[tuple[str, str]] = []
     try:
         with file.open("r", encoding="utf-8", errors="replace") as handle:
@@ -311,12 +299,11 @@ def preview(file_value: str) -> None:
                 role = message_role(record)
                 if role not in ("user", "assistant"):
                     continue
-                body = message_body(record).strip()
+                body = message_body(record).rstrip()
                 if not body or is_noise_message(body):
                     continue
-                body = re.sub(r"\n{3,}", "\n\n", body)
-                if len(body) > 1800:
-                    body = body[:1800] + "\n…"
+                if len(body) > 4000:
+                    body = body[:4000] + "\n…"
                 messages.append((role, body))
     except OSError as exc:
         print(exc)
@@ -325,8 +312,9 @@ def preview(file_value: str) -> None:
     for role, body in messages[-18:]:
         label = "User" if role == "user" else "Claude"
         color = "\033[36m" if role == "user" else "\033[32m"
-        print(f"\n{color}{label}\033[0m")
+        print(f"{color}{label}\033[0m")
         print(body)
+        print()
 
 
 def read_session_by_file(file_value: str) -> Session:
