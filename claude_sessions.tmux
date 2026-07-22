@@ -288,7 +288,60 @@ def preview(file_value: str) -> None:
         print("Unable to read session.")
         return
 
-    messages: list[tuple[str, str]] = []
+    # For a live Claude session, use the exact same source as the pane
+    # navigator. This preserves terminal prompts, colors, wrapping, tool
+    # output, and the current scrollback instead of reconstructing it from
+    # the JSONL transcript.
+    if command_exists("tmux"):
+        proc = run(
+            [
+                "tmux",
+                "list-panes",
+                "-a",
+                "-F",
+                "#{pane_id}\t#{@claude_session_id}",
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.DEVNULL,
+        )
+        if proc.returncode == 0:
+            for line in proc.stdout.splitlines():
+                pane_id, _, pane_session_id = line.partition("\t")
+                if pane_session_id.strip() != session.session_id:
+                    continue
+                try:
+                    pane_height = int(
+                        run(
+                            ["tmux", "display-message", "-t", pane_id, "-p", "#{pane_height}"],
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.DEVNULL,
+                        ).stdout.strip()
+                    )
+                except (TypeError, ValueError):
+                    pane_height = 0
+                try:
+                    preview_lines = int(os.environ.get("FZF_PREVIEW_LINES", "0"))
+                except ValueError:
+                    preview_lines = 0
+                start = max(0, pane_height - preview_lines) if preview_lines else 0
+                capture = run(
+                    [
+                        "tmux",
+                        "capture-pane",
+                        "-pe",
+                        "-S",
+                        str(start),
+                        "-t",
+                        pane_id,
+                    ],
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.DEVNULL,
+                )
+                if capture.returncode == 0:
+                    print(capture.stdout, end="")
+                    return
+
+    messages: list[str] = []
     try:
         with file.open("r", encoding="utf-8", errors="replace") as handle:
             for line in handle:
@@ -304,15 +357,12 @@ def preview(file_value: str) -> None:
                     continue
                 if len(body) > 4000:
                     body = body[:4000] + "\n…"
-                messages.append((role, body))
+                messages.append(body)
     except OSError as exc:
         print(exc)
         return
 
-    for role, body in messages[-18:]:
-        label = "User" if role == "user" else "Claude"
-        color = "\033[36m" if role == "user" else "\033[32m"
-        print(f"{color}{label}\033[0m")
+    for body in messages[-18:]:
         print(body)
         print()
 
