@@ -1,8 +1,8 @@
-# tmux-agent-pane
+# agent-pane.tmux
 
 > Agent task tracker, notification system, and fzf pane navigator for tmux.
 
-Tracks AI agent task lifecycle (running → done/failed), provides unread/watch markers per pane/window, and bundles an fzf-based pane navigator with agent status awareness.
+Tracks AI agent task lifecycle (running -> done/failed), provides unread/watch markers per pane/window, and bundles matching fzf popups for live panes and saved Claude Code sessions.
 
 ## Features
 
@@ -10,8 +10,9 @@ Tracks AI agent task lifecycle (running → done/failed), provides unread/watch 
 - **Unread markers** — Per-pane and per-window "has new output" flags
 - **Input pending** — Detects when an agent is waiting for user input
 - **Focus-aware clearing** — Unread markers auto-clear when pane/window is selected
-- **fzf pane navigator** — Browse all panes with agent status, MRU ordering, preview, and move/kill/swap actions
-- **Claude history manager** — Search saved Claude Code sessions, preview transcripts, restore sessions, and trash old history
+- **fzf pane navigator** — Browse all panes with agent status, MRU ordering, terminal preview, and move/kill/swap actions
+- **Claude history manager** — Search saved Claude Code sessions, preview transcripts, restore sessions, and trash or delete old history
+- **Unified popup UI** — Pane and session popups use the same fzf layout, default terminal background, bottom preview, visible selection background, and bottom shortcut label
 - **Status bar icons** — Appends agent state icons to existing `window-status-format`
 
 ## Installation
@@ -21,7 +22,7 @@ Tracks AI agent task lifecycle (running → done/failed), provides unread/watch 
 Add to `~/.tmux.conf`:
 
 ```tmux
-set -g @plugin 'user/tmux-agent-pane'
+set -g @plugin 'mingo99/agent-pane.tmux'
 ```
 
 Then `Prefix + I` to install.
@@ -31,7 +32,7 @@ Then `Prefix + I` to install.
 Clone and source in `~/.tmux.conf`:
 
 ```tmux
-run '~/.config/tmux/plugins/tmux-agent-pane/agent.tmux'
+run '~/.config/tmux/plugins/agent-pane.tmux/agent.tmux'
 ```
 
 ## Keybindings
@@ -42,17 +43,19 @@ run '~/.config/tmux/plugins/tmux-agent-pane/agent.tmux'
 | `M-w` | Toggle pane watch (monitor command completion) |
 | `M-m` | Jump to latest notified pane (question > unread) |
 | `M-M` | Jump back to last origin pane |
-| `f` | Open fzf pane navigator popup |
-| `C` | Open Claude Code history manager popup |
+| `prefix + f` | Open fzf pane navigator popup |
+| `prefix + C` | Open Claude Code history manager popup |
 
 ### fzf navigator actions
+
+`prefix + f` opens a searchable list of live tmux panes. The list is aligned into fixed columns and the preview is the raw terminal capture from the selected pane.
 
 | Shortcut | Action |
 |---|---|
 | `Enter` | Switch to selected pane |
 | `Ctrl-x` | Kill selected pane |
-| `Ctrl-v` | Move pane to left (horizontal split with last pane) |
-| `Ctrl-s` | Move pane to bottom (vertical split with last pane) |
+| `Ctrl-v` | Move pane to the right of the origin pane |
+| `Ctrl-s` | Move pane below the origin pane |
 | `Ctrl-t` | Swap with last pane |
 | `Ctrl-r` | Reload pane list |
 | `Alt-p` | Toggle preview |
@@ -61,7 +64,7 @@ Multi-select with `Tab` — selecting multiple panes breaks them into a new wind
 
 ### Claude history actions
 
-`prefix + C` scans `~/.claude/projects` and opens a searchable Claude Code history list. `subagents/` transcripts are skipped by default.
+`prefix + C` scans `~/.claude/projects` and opens a searchable Claude Code history list. `subagents/` transcripts are skipped by default. Active sessions are previewed with the same raw tmux capture used by the pane navigator; closed sessions use a compact transcript preview with `User` and `Claude` role labels.
 
 | Shortcut | Action |
 |---|---|
@@ -69,7 +72,8 @@ Multi-select with `Tab` — selecting multiple panes breaks them into a new wind
 | `Ctrl-v` | Restore in a right split |
 | `Ctrl-s` | Restore in a bottom split |
 | `Ctrl-o` | Type the restore command into the origin pane |
-| `Ctrl-x` | Choose trash or permanent deletion |
+| `Ctrl-i` | Toggle selection for the current session |
+| `Ctrl-x` | Delete selected sessions, or the current session if none are selected |
 | `Ctrl-y` | Copy session id |
 | `Ctrl-r` | Reload session list |
 | `Alt-p` | Toggle preview |
@@ -80,9 +84,7 @@ Trash location:
 ~/.local/share/tmux-claude-sessions/trash/
 ```
 
-After pressing `Ctrl-x`, choose `t` to move the transcript to trash or `d` to
-delete it permanently. Both choices require confirmation, and the session list
-reopens automatically afterward.
+After pressing `Ctrl-x`, choose `t` to move transcripts to trash or `d` to delete them permanently. Both choices require confirmation, support multiple selected sessions, and reopen the session list automatically afterward.
 
 Sessions launched through this manager set pane option `@claude_session_id`, so the history list can mark them as `active` while the pane exists.
 
