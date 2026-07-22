@@ -341,7 +341,7 @@ def preview(file_value: str) -> None:
                     print(capture.stdout, end="")
                     return
 
-    messages: list[str] = []
+    messages: list[tuple[str, str]] = []
     try:
         with file.open("r", encoding="utf-8", errors="replace") as handle:
             for line in handle:
@@ -357,12 +357,15 @@ def preview(file_value: str) -> None:
                     continue
                 if len(body) > 4000:
                     body = body[:4000] + "\n…"
-                messages.append(body)
+                messages.append((role, body))
     except OSError as exc:
         print(exc)
         return
 
-    for body in messages[-18:]:
+    for role, body in messages[-18:]:
+        label = "User" if role == "user" else "Claude"
+        color = "\033[36m" if role == "user" else "\033[32m"
+        print(f"{color}{label}\033[0m")
         print(body)
         print()
 
