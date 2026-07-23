@@ -95,10 +95,10 @@ running Claude processes may not reload hook settings.
 
 | Key | Action |
 |---|---|
-| `M-b` | Toggle unread marker on current window |
-| `M-w` | Toggle pane watch (monitor command completion) |
-| `M-m` | Jump to latest notified pane (question > unread) |
-| `M-M` | Jump back to last origin pane |
+| `prefix + b` | Toggle unread marker on current window |
+| `prefix + w` | Toggle pane watch (monitor command completion) |
+| `prefix + m` | Jump to latest notified pane (question > unread) |
+| `prefix + M` | Jump back to last origin pane |
 | `prefix + f` | Open fzf pane navigator popup |
 | `prefix + C` | Open Claude Code history manager popup |
 

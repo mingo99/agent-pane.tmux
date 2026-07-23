@@ -38,20 +38,26 @@ tmux set-hook -g client-session-changed \
 # Keybindings
 # ============================================================
 
+# Remove legacy global bindings from older plugin versions.
+tmux unbind -n M-b 2>/dev/null || true
+tmux unbind -n M-w 2>/dev/null || true
+tmux unbind -n M-m 2>/dev/null || true
+tmux unbind -n M-M 2>/dev/null || true
+
 # Toggle unread marker on current window
-tmux bind -n M-b run-shell \
+tmux bind b run-shell \
   'val=$(tmux show -wv @unread 2>/dev/null); if [ "$val" = "1" ]; then tmux set -wu @unread; tmux set -wu @watch_failed; else tmux set -w @unread 1; tmux set -wu @watch_failed; fi; tmux refresh-client -S'
 
 # Toggle pane watch (monitor command completion)
-tmux bind -n M-w run-shell -b \
+tmux bind w run-shell -b \
   "val=\$(tmux show-options -wqv @watching); if [ \"\$val\" = \"1\" ]; then tmux set -wu @watching; tmux set -wu @watch_failed; tmux refresh-client -S; else bash '$SCRIPTS/watch_pane.sh' \"#{pane_id}\" \"#{window_id}\"; fi"
 
 # Jump to latest notified pane
-tmux bind -n M-m run-shell \
+tmux bind m run-shell \
   "test -f '$SCRIPTS/focus_latest_notified.sh' && bash '$SCRIPTS/focus_latest_notified.sh' || true"
 
 # Jump back to last origin pane
-tmux bind -n M-M run-shell \
+tmux bind M run-shell \
   "test -f '$SCRIPTS/focus_last_origin.sh' && bash '$SCRIPTS/focus_last_origin.sh' || true"
 
 # fzf pane navigator in a popup
